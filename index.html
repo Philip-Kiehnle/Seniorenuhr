@@ -1,0 +1,336 @@
+<html>
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0"/>
+<title>Seniorenuhr</title>
+  <style>
+
+    .class_settings {
+      font-size: 17;
+    }
+
+    div.class_mediumText {
+      font-size: 15;
+    }
+
+    div.class_largeText {
+      font-size: 20;
+      width: max-content;
+    }
+
+    </style>
+</head>
+
+<body>
+
+<div id='fsContainer'>
+  <div class='class_fsContent' id='fsContent'>
+    <div class='class_div_twoline'>
+      <div class="class_largeText class_scaleText" id='date'>
+        d
+      </div>
+      <div class="class_largeText class_scaleText" id='clock'>
+        hh:mm
+      </div>
+    </div>
+    <br>
+    <div class='class_div_twoline'>
+      <div class="class_mediumText class_scaleText">
+        Termine:
+      </div>
+      <div class="class_largeText class_scaleText" id='meeting'>
+        -
+      </div>
+    </div>
+  </div>
+</div>
+
+<button class="class_button class_settings" id='bt_fullscreen'>Start Fullscreen</button>
+<br>
+<table class="class_settings">
+  <tr>
+    <td>Mo:</td>
+    <td><input class="class_settings" type='text' id='input_day1' value="Tagespflege 😊"/></td>
+  </tr>
+  <tr>
+    <td>Di:</td>
+    <td><input class="class_settings" type='text' id='input_day2'/></td>
+  </tr>
+  <tr>
+    <td>Mi:</td>
+    <td><input class="class_settings" type='text' id='input_day3' value="Tagespflege 😊"/></td>
+  </tr>
+  <tr>
+    <td>Do:</td>
+    <td><input class="class_settings" type='text' id='input_day4'/></td>
+  </tr>
+  <tr>
+    <td>Fr:</td>
+    <td><input class="class_settings" type='text' id='input_day5' value="Tagespflege 😊"/></td>
+  </tr>
+  <tr>
+    <td>Sa:</td>
+    <td><input class="class_settings" type='text' id='input_day6'/></td>
+  </tr>
+  <tr>
+    <td>So:</td>
+    <td><input class="class_settings" type='text' id='input_day0'/></td>
+  </tr>
+  <tr>
+    <td>Disp. On:</td>
+    <td>
+    <input class="class_settings" type='time' id='input_dispON' value='06:30' style="width:auto"> bis
+    <input class="class_settings" type='time' id='input_dispOFF' value='22:00' style="width:auto">
+    </td>
+  </tr>
+  <tr>
+    <td>Darkmode:</td>
+    <td><input type='checkbox' id='checkbox_darkmode' checked></td>
+  </tr>
+</table>
+<span>Wakelock: </span><span id='wakelock_text'></span>
+
+<script>
+
+  var text_color = 'black';
+  var background_color = 'white';
+
+  var black_page = false;
+
+  const HOUR_SHOW_NEXTDAY = 20; // show next day meetings after this hour
+
+  // prevent display Burn-In
+  var shift_done = false;
+  var pixel_offset = 0;
+  const PIXEL_OFFSET_HOURSTEP = 11;  // prime number
+  const PIXEL_OFFSET_MAX = 70;
+
+  function isDocumentInFullScreenMode()
+  {
+    return document.fullscreenElement !== null;
+  }
+
+  function leadingZero(x)
+  {
+    x = (x < 10 ? '0' : '' )+ x;
+    return x;
+  }
+
+  function update_clock()
+  {
+    var now = new Date(),
+        h = now.getHours(),
+        m = now.getMinutes(),
+        s = now.getSeconds();
+
+    h = leadingZero(h);
+    m = leadingZero(m);
+    s = leadingZero(s);
+    time_str = '<strong>'+ h + ':' + m + ' Uhr</strong>';;// + ':' + s;
+    document.getElementById('clock').innerHTML =time_str;
+  }
+
+  function update_day_of_week()
+  {
+    let date = new Date();
+    wochentag=new Array('Sonntag', 'Montag', 'Dienstag', 'Mittwoch', 'Donnerstag', 'Freitag','Samstag');
+    monat = ['Januar','Februar','März','April','Mai','Juni','Juli','August','September',
+                'Oktober','November','Dezember'],
+    date_str = '<strong>' + wochentag[date.getDay()] + '</strong>';
+    date_str += ", "+ date.getDate() +". "+ monat[date.getMonth()];
+    //date_str += " "+date.getFullYear();
+    document.getElementById('date').innerHTML = date_str;
+  }
+
+  function get_meeting(day_nr)
+  {
+    let input_field = 'input_day' + day_nr;
+    let meeting_text = document.getElementById(input_field).value;
+    return meeting_text;
+  }
+
+  function update_meeting()
+  {
+    let date = new Date();
+    meeting_str = "<strong>";
+
+    let day_nr = date.getDay();
+
+    let meeting_today = get_meeting(day_nr);
+    if (meeting_today != '' && date.getHours() < HOUR_SHOW_NEXTDAY) {
+      meeting_str += "heute " + meeting_today;
+    } else {
+      day_nr += 1;
+      if (day_nr == 7) day_nr = 0;
+      let meeting_tomorrow = get_meeting(day_nr);
+      if (meeting_tomorrow != '') {
+        meeting_str += "morgen " + meeting_tomorrow;
+      } else {
+        meeting_str += "-";
+      }
+    }
+
+    meeting_str += '</strong>';
+    document.getElementById('meeting').innerHTML = meeting_str;
+  }
+
+  function resizeText()
+  {
+    let screen_width = document.querySelectorAll('.class_div_twoline')[0].clientWidth;
+    let date_width = document.getElementById('date').clientWidth;
+    let meeting_width = document.getElementById('meeting').clientWidth;
+    let max_width = Math.max(date_width, meeting_width);
+    let font_scale = screen_width/max_width;
+    //console.log('screen_width', screen_width);
+    //console.log('max_width', max_width);
+    //console.log('font_scale', font_scale);
+
+    if (font_scale > 0.01) {
+        var el = document.querySelectorAll('.class_scaleText');
+        for ( var i = 0; i < el.length; i ++ ) {
+            let css_fontSize = getComputedStyle(el[i]).getPropertyValue('font-size');
+            let new_fontsize = Math.floor(parseInt(css_fontSize) * font_scale);
+            new_fontsize = Math.min(80,new_fontsize);
+            el[i].style.fontSize = new_fontsize;
+        }
+    }
+  }
+
+  function getMinutesFromText(text)
+  {
+    var time = text.split(":");
+    var hour = parseInt(time[0]);
+    var min = parseInt(time[1]);
+    return hour*60+min;
+  }
+
+  function check_darkmode()
+  {
+    if (document.getElementById('checkbox_darkmode').checked) {
+      text_color = 'white';
+      background_color = 'black';
+    } else {
+      text_color = 'black';
+      background_color = 'white';
+    }
+  }
+
+  function refresh()
+  {
+    let now = new Date();
+    let h = now.getHours();
+    let now_minutes = now.getHours()*60 + now.getMinutes();
+
+    let nightend_minutes = getMinutesFromText(document.getElementById('input_dispON').value);
+    let nightbegin_minutes = getMinutesFromText(document.getElementById('input_dispOFF').value);
+
+    let nighttime = false;
+
+    if (   (   (nightbegin_minutes > nightend_minutes)  // e.g. 23:00 to 4:00
+            && (now_minutes >= nightbegin_minutes || now_minutes < nightend_minutes) )
+        || (   (nightbegin_minutes < nightend_minutes)  // e.g. 1:00 to 4:00
+            && (now_minutes >= nightbegin_minutes && now_minutes < nightend_minutes) )
+       ) {
+        nighttime = true;
+    }
+
+    if (isDocumentInFullScreenMode() && nighttime) {
+        black_page = true;
+    } else {
+        black_page = false;
+        if (isDocumentInFullScreenMode()) {
+          // Shift text every hour to prevent display Burn-In
+          if (now.getMinutes() == 0 && !shift_done ) {
+            pixel_offset += PIXEL_OFFSET_HOURSTEP;
+            if (pixel_offset > PIXEL_OFFSET_MAX) pixel_offset -= PIXEL_OFFSET_MAX;
+            shift_done = true;
+          } else if (now.getMinutes() == 1 ) {
+            shift_done = false;
+          }
+        } else {
+          pixel_offset = 0;
+        }
+    }
+
+    document.getElementById('fsContainer').style.paddingTop = pixel_offset + 'px';
+
+    if (black_page) {
+        document.getElementById('fsContent').style.visibility = 'hidden';
+        document.body.style.backgroundColor = 'black';
+    } else {
+        document.getElementById('fsContent').style.visibility = 'visible';
+        document.body.style.backgroundColor = 'white';
+
+        document.getElementById('fsContent').style.color = text_color;
+        document.getElementById('fsContent').style.backgroundColor = background_color;
+
+        update_clock();
+        update_day_of_week();
+        update_meeting();
+        resizeText();
+    }
+  }
+
+  document.getElementById('checkbox_darkmode').addEventListener('click', function () {
+    check_darkmode();
+    refresh();
+  });
+
+  document.getElementById('bt_fullscreen').addEventListener('click', function() {
+    openFullscreen();
+    screen.orientation.lock('landscape');
+  });
+
+  document.addEventListener('fullscreenchange', function () {
+    // screen redering starts after listener fct finished.
+    setTimeout(refresh, 250);  // 160ms sometimes not enough
+    get_wakelock();
+  });
+
+
+  function openFullscreen()
+  {
+    var elem = document.getElementById('fsContainer');
+    if (elem.requestFullscreen) {
+      elem.requestFullscreen();
+    } else if (elem.webkitRequestFullScreen) {
+      elem.webkitRequestFullScreen();
+    } else if (elem.mozRequestFullScreen) {
+      elem.mozRequestFullScreen();
+    } else if (elem.msRequestFullscreen) {
+      elem.msRequestFullscreen();
+    }
+  }
+
+
+  async function get_wakelock()
+  {
+    // Create a reference for the Wake Lock.
+    let wakeLock = null;
+
+    // create an async function to request a wake lock
+    try {
+      wakeLock = await navigator.wakeLock.request("screen");
+    } catch (err) {
+      // The Wake Lock request has failed - usually system related, such as battery.
+      //document.getElementById('date').innerHTML = `${err.name}, ${err.message}`;
+    }
+  }
+
+  const T_ms = 5000;
+
+  check_darkmode();
+  refresh();
+
+  if ("wakeLock" in navigator) {
+    document.getElementById('wakelock_text').innerHTML = "Supported.";
+  } else {
+    document.getElementById('wakelock_text').innerHTML = "Not supported by browser or http!";
+  }
+
+  setInterval(function(){
+    refresh();
+  }, T_ms );
+</script>
+</body>
+</html>

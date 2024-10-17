@@ -1,0 +1,88 @@
+<html>
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0"/>
+<title>Inverterstatus</title>
+<link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+<table border="1" style="border-collapse: collapse">
+  <tr>
+    <td></td>
+    <td>Leistung</td>
+    <td>Energie heute</td>
+    <td>Energie gesamt</td>
+  </tr>
+  <tr>
+    <td>PV1</td>
+    <td class="class_alignRight"><span></span><span id='p_pv1_text'></span></td>
+    <td class="class_alignRight"><span></span><span id='e_pv1_text'></span></td>
+    <td class="class_alignRight"><span></span><span id='te_pv1_text'></span></td>
+  </tr>
+  <tr>
+    <td>PV2</td>
+    <td class="class_alignRight"><span></span><span id='p_pv2_text'></span></td>
+    <td class="class_alignRight"><span></span><span id='e_pv2_text'></span></td>
+    <td class="class_alignRight"><span></span><span id='te_pv2_text'></span></td>
+  </tr>
+  <tr>
+    <td>gesamt</td>
+    <td class="class_alignRight"><span></span><span id='p_text'></span></td>
+    <td class="class_alignRight"><span></span><span id='e_text'></span></td>
+    <td class="class_alignRight"><span></span><span id='te_text'></span></td>
+  </tr>
+</table>
+
+<script src="../cookiehandler.js"></script>
+
+<script>
+
+  function update_outputdata(json)
+  {
+    console.log('outputdata_json:', json);
+
+    document.getElementById('p_pv1_text').innerHTML = json.data.p1 + ' W';
+    document.getElementById('p_pv2_text').innerHTML = json.data.p2 + ' W';
+    document.getElementById('p_text').innerHTML = json.data.p1+json.data.p2 + ' W';
+
+    document.getElementById('e_pv1_text').innerHTML = build_value_str(json.data.e1, 2, 'kWh');
+    document.getElementById('e_pv2_text').innerHTML = build_value_str(json.data.e2, 2, 'kWh');
+    document.getElementById('e_text').innerHTML = build_value_str(json.data.e1+json.data.e2, 2, 'kWh');
+
+    document.getElementById('te_pv1_text').innerHTML = build_value_str(json.data.te1, 1, 'kWh');
+    document.getElementById('te_pv2_text').innerHTML = build_value_str(json.data.te2, 1, 'kWh');
+    document.getElementById('te_text').innerHTML = build_value_str(json.data.te1+json.data.te2, 1, 'kWh');
+  }
+
+  function build_value_str(value, decimals, unit) {
+    let value_str = (value).toLocaleString(
+              undefined, // leave undefined to use the visitor's browser
+                // locale or a string like 'en-US' to override it.
+              { minimumFractionDigits: decimals,
+                maximumFractionDigits: decimals }
+    );
+    return value_str + ' '+unit;
+  }
+
+  function update()
+  {
+    inverterURL = getCookie('inverterURL');
+    //console.log("[inverter/tableview.html] getCookie inverterURL", inverterURL);
+    if (inverterURL != '') {
+      fetch(inverterURL+'/getOutputData', {cache: "no-store"})
+      .then(res => res.json())
+      .then(out => update_outputdata(out))
+      .catch(err => console.log(err));
+    }
+  }
+
+  const T_ms = 2000;
+  update();
+
+  setInterval(function(){
+    update();
+  }, T_ms );
+</script>
+</body>
+</html>

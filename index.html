@@ -18,13 +18,18 @@
       width: max-content;
     }
 
+    .frame {
+      transform: scale(1.6);
+      transform-origin: 0 0;
+    }
+
     </style>
 </head>
 
 <body>
 
 <div id='fsContainer'>
-  <div class='class_fsContent' id='fsContent'>
+  <div id='div_fsContent_main'>
     <div class='class_div_twoline'>
       <div class="class_largeText class_scaleText" id='date'>
         d
@@ -43,38 +48,41 @@
       </div>
     </div>
   </div>
+  <div id='div_fsContent_inverterView' style="display: none;">
+    <iframe id="iFrame_inverterView" class="frame" src="about:blank" style="height:100%" frameborder="0"></iframe>
+  </div>
 </div>
-
-<button class="class_button class_settings" id='bt_fullscreen'>Start Fullscreen</button>
+<br>
+<button class="class_button class_settings" id='bt_fullscreen' style="height:40px">Start Fullscreen</button>
 <br>
 <table class="class_settings">
   <tr>
     <td>Mo:</td>
-    <td><input class="class_settings" type='text' id='input_day1' value="Tagespflege 😊"/></td>
+    <td><input class="class_settings persistent" type='text' id='input_day1' value="Tagespflege 😊"/></td>
   </tr>
   <tr>
     <td>Di:</td>
-    <td><input class="class_settings" type='text' id='input_day2'/></td>
+    <td><input class="class_settings persistent" type='text' id='input_day2'/></td>
   </tr>
   <tr>
     <td>Mi:</td>
-    <td><input class="class_settings" type='text' id='input_day3' value="Tagespflege 😊"/></td>
+    <td><input class="class_settings persistent" type='text' id='input_day3' value="Tagespflege 😊"/></td>
   </tr>
   <tr>
     <td>Do:</td>
-    <td><input class="class_settings" type='text' id='input_day4'/></td>
+    <td><input class="class_settings persistent" type='text' id='input_day4'/></td>
   </tr>
   <tr>
     <td>Fr:</td>
-    <td><input class="class_settings" type='text' id='input_day5' value="Tagespflege 😊"/></td>
+    <td><input class="class_settings persistent" type='text' id='input_day5' value="Tagespflege 😊"/></td>
   </tr>
   <tr>
     <td>Sa:</td>
-    <td><input class="class_settings" type='text' id='input_day6'/></td>
+    <td><input class="class_settings persistent" type='text' id='input_day6'/></td>
   </tr>
   <tr>
     <td>So:</td>
-    <td><input class="class_settings" type='text' id='input_day0'/></td>
+    <td><input class="class_settings persistent" type='text' id='input_day0'/></td>
   </tr>
   <tr>
     <td>Disp. On:</td>
@@ -89,13 +97,32 @@
   </tr>
 </table>
 <span>Wakelock: </span><span id='wakelock_text'></span>
+<br>
+<br>
+<table class="class_settings">
+  <tr>
+    <td>Wechselrichter abfragen:</td>
+    <td><input type='checkbox' id='checkbox_inverter'></td>
+  </tr>
+</table>
+<div id='div_inverter' style="display: none;">
+  <!-- <iframe id="iFrame_inverterSettings" src="inverter/settings.html" scrolling="no" frameborder="0"></iframe> -->
+  <iframe id="iFrame_inverterSettings" src="inverter/settings.html" frameborder="0"></iframe>
+  <br>
+  <span id='inverterHelp_text'></span>
+  <br>
+  <iframe id="iFrame_inverterPreview" src="about:blank" style="height:35%" frameborder="0"></iframe>
+</div>
 
+<script src="cookiehandler.js"></script>
 <script>
 
   var text_color = 'black';
   var background_color = 'white';
 
   var black_page = false;
+  var screen_width_portrait = 0;
+  var timeoutId;
 
   const HOUR_SHOW_NEXTDAY = 20; // show next day meetings after this hour
 
@@ -177,6 +204,14 @@
   function resizeText()
   {
     let screen_width = document.querySelectorAll('.class_div_twoline')[0].clientWidth;
+    if (screen_width_portrait == 0) {
+      screen_width_portrait = screen_width;
+    }
+    if (!is_fullscreen()) {
+      screen_width = screen_width_portrait;
+    } else {
+      screen_width = window.innerWidth;
+    }
     let date_width = document.getElementById('date').clientWidth;
     let meeting_width = document.getElementById('meeting').clientWidth;
     let max_width = Math.max(date_width, meeting_width);
@@ -187,7 +222,7 @@
 
     if (font_scale > 0.01) {
         var el = document.querySelectorAll('.class_scaleText');
-        for ( var i = 0; i < el.length; i ++ ) {
+        for ( var i = 0; i < el.length; i++ ) {
             let css_fontSize = getComputedStyle(el[i]).getPropertyValue('font-size');
             let new_fontsize = Math.floor(parseInt(css_fontSize) * font_scale);
             new_fontsize = Math.min(80,new_fontsize);
@@ -255,14 +290,14 @@
     document.getElementById('fsContainer').style.paddingTop = pixel_offset + 'px';
 
     if (black_page) {
-        document.getElementById('fsContent').style.visibility = 'hidden';
+        document.getElementById('div_fsContent_main').style.visibility = 'hidden';
         document.body.style.backgroundColor = 'black';
     } else {
-        document.getElementById('fsContent').style.visibility = 'visible';
+        document.getElementById('div_fsContent_main').style.visibility = 'visible';
         document.body.style.backgroundColor = 'white';
 
-        document.getElementById('fsContent').style.color = text_color;
-        document.getElementById('fsContent').style.backgroundColor = background_color;
+        document.getElementById('div_fsContent_main').style.color = text_color;
+        document.getElementById('div_fsContent_main').style.backgroundColor = background_color;
 
         update_clock();
         update_day_of_week();
@@ -271,9 +306,30 @@
     }
   }
 
+  const inputs = [...document.querySelectorAll(".persistent")];
+  inputs.forEach(input => input.addEventListener('input', function () {
+    setCookie(input.id, input.value, 50*365);
+  }
+  ));
+
   document.getElementById('checkbox_darkmode').addEventListener('click', function () {
     check_darkmode();
     refresh();
+  });
+
+  document.getElementById('checkbox_inverter').addEventListener('click', function () {
+    document.getElementById('inverterHelp_text').innerHTML = "Tabelle wird bei Klick im Fullscreen für " + Tinverter_sec + " Sekunden angezeigt.";
+    let iFrame_settings = document.getElementById('iFrame_inverterSettings');
+    set_inverter_polling();
+
+    if (document.getElementById('checkbox_inverter').checked) {
+      document.getElementById('div_inverter').style.display = 'inline-block';
+      iFrame_settings.src = "inverter/settings.html";
+      iFrame_settings.height = iFrame_settings.contentWindow.document.body.scrollHeight;
+    } else {
+      document.getElementById('div_inverter').style.display = 'none';
+      iFrame_settings.src = "about:blank";
+    }
   });
 
   document.getElementById('bt_fullscreen').addEventListener('click', function() {
@@ -282,11 +338,90 @@
   });
 
   document.addEventListener('fullscreenchange', function () {
-    // screen redering starts after listener fct finished.
+    // screen rendering starts after listener fct finished.
     setTimeout(refresh, 250);  // 160ms sometimes not enough
     get_wakelock();
+    set_inverter_polling();
+    if (!is_fullscreen()) switch_fsContainer(0);
   });
 
+  document.getElementById('fsContainer').addEventListener('click', function() {
+    if (document.getElementById('checkbox_inverter').checked) {
+      if (is_inverterView()) {
+        switch_fsContainer(0);
+      } else if (is_fullscreen()) {
+        switch_fsContainer(1);
+        document.getElementById('div_fsContent_inverterView').style.width="100%";
+        document.getElementById('div_fsContent_inverterView').style.height="100%";
+        if (timeoutId) clearTimeout(timeoutId);
+        timeoutId = setTimeout("switch_fsContainer(0)", Tinverter_sec*1000);
+      }
+      document.getElementById('div_fsContent_inverterView').style.backgroundColor = 'white';
+    }
+  });
+
+  function is_inverterView()
+  {
+    if (document.getElementById('div_fsContent_inverterView').style.display == 'inline-block') {
+      return true;
+    } else {
+      return false;
+    }
+  }
+
+  function is_fullscreen()
+  {
+    if (!document.isFullScreen && !document.fullscreenElement && !document.webkitFullscreenElement && !document.mozFullScreenElement && !document.msFullscreenElement) {
+      //console.log('not fullscreen');
+      return false;
+    } else {
+      //console.log('fullscreen');
+      return true;
+    }
+  }
+
+  // if iframe src is not blank, scripts in iframe are executed
+  function set_inverter_polling()
+  {
+    en_View = false;
+    en_Preview = false;
+
+    if (document.getElementById('checkbox_inverter').checked) {
+      if (is_fullscreen() && is_inverterView()) {
+        en_View = true;
+      }
+      if (!is_fullscreen()) {
+        en_Preview = true;
+      }
+    }
+
+    let iFrame_inverterView = document.getElementById('iFrame_inverterView');
+    let iFrame_inverterPreview = document.getElementById('iFrame_inverterPreview');
+    iFrame_inverterView.src = "about:blank";
+    iFrame_inverterPreview.src = "about:blank";
+    if (en_View) {
+      iFrame_inverterView.src = "inverter/tableview.html";
+      iFrame_inverterView.height = iFrame_inverterView.contentWindow.document.body.scrollHeight;
+      iFrame_inverterView.width = iFrame_inverterView.contentWindow.document.body.width;
+    }
+    if (en_Preview) {
+      iFrame_inverterPreview.src = "inverter/tableview.html";
+    }
+  }
+
+  function switch_fsContainer(use_inverterView)
+  {
+    let main_dispStyle = 'inline-block';
+    let inv_dispStyle = 'none';
+    if (use_inverterView) {
+      main_dispStyle = 'none';
+      inv_dispStyle = 'inline-block';
+    }
+    document.getElementById('div_fsContent_main').style.display = main_dispStyle;
+    document.getElementById('div_fsContent_inverterView').style.display = inv_dispStyle;
+    set_inverter_polling();
+    resizeText();
+  }
 
   function openFullscreen()
   {
@@ -318,9 +453,20 @@
   }
 
   const T_ms = 5000;
+  const Tinverter_sec = 30;
 
   check_darkmode();
   refresh();
+
+  for ( var day_nr = 0; day_nr < 7; day_nr++ ) {
+    let input_field = 'input_day' + day_nr;
+    cookie = getCookie(input_field);
+    if (document.cookie.indexOf(input_field) == -1) {
+      setCookie(input_field, document.getElementById(input_field).value, 50*365);
+    } else {
+      document.getElementById(input_field).value = cookie;
+    }
+  }
 
   if ("wakeLock" in navigator) {
     document.getElementById('wakelock_text').innerHTML = "Supported.";

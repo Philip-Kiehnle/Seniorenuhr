@@ -1,0 +1,80 @@
+<html>
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0"/>
+<title>Inverterstatus</title>
+<link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+  <div style='background-color:#FFFFED'>
+  Supported Inverters:
+  <ul>
+    <li>APsystems EZ1-M (enable local API)</li>
+  </ul>
+
+  <!-- localdebug: http://0.0.0.0:8000/inverter/dummydata -->
+  <input type='text' id='input_inverterURL' placeholder="http://192.168.0.xx:8050"></td>
+  <button class="class_button" id='bt_inverterURL'>Set Inverter URL</button>
+
+  <table>
+    <tr>
+      <td>deviceId:</td>
+      <td><span id='deviceId_text'></span></td>
+    </tr>
+    <tr>
+      <td>devVer:</td>
+      <td><span id='devVer_text'></span></td>
+    </tr>
+    <tr>
+      <td>maxPower:</td>
+      <td><span id='maxPower_text'></span></td>
+    </tr>
+  </table>
+</div>
+
+<script src="../cookiehandler.js"></script>
+<script>
+
+  function update_deviceinfo()
+  {
+    fetch(inverterURL+'/getDeviceInfo', {cache: "no-store"})
+    .then(res => res.json())
+    .then(out => update_deviceinfo_text(out))
+    .catch(err => console.log(err));
+  }
+
+  function update_deviceinfo_text(json)
+  {
+    document.getElementById('deviceId_text').innerHTML = json.data.deviceId;
+    document.getElementById('devVer_text').innerHTML = json.data.devVer;
+    document.getElementById('maxPower_text').innerHTML = json.data.maxPower;
+  }
+
+  function clear_deviceinfo_text()
+  {
+    document.getElementById('deviceId_text').innerHTML = "";
+    document.getElementById('devVer_text').innerHTML = "";
+    document.getElementById('maxPower_text').innerHTML = "";
+  }
+
+
+  document.getElementById('bt_inverterURL').addEventListener('click', function() {
+    input = document.getElementById('input_inverterURL').value;
+    inverterURL = input;
+    console.log("[inverter/settings.html] setCookie inverterURL=", inverterURL);
+    setCookie('inverterURL', inverterURL, 50*365);
+    clear_deviceinfo_text();
+    update_deviceinfo();
+  });
+
+  inverterURL = getCookie('inverterURL');
+  console.log("[inverter/settings.html] getCookie inverterURL=", inverterURL);
+  if (inverterURL != '') {
+    document.getElementById('input_inverterURL').value = inverterURL;
+    update_deviceinfo();
+  }
+
+</script>
+</body>
+</html>

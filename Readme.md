@@ -25,6 +25,9 @@ Gemessen mit ELV Energy Master.
 ## HTTP Server mit Python
 ```
 python3 -m http.server
+
+# Um die Wechselrichteranzeige aus der produktiven https Seite zu testen, müssen die dummy Daten mit dem Header "Access-Control-Allow-Origin: *" gesendet werden. Dazu:
+python3 simple_cors_server.py
 ```
 Kein wakelock support für http! Display geht nach timeout aus. Bei Galaxy S5 nur 10 Minuten Timeout konfigurierbar. Bis zu 24 Tage sollen per cmd konfigurierbar sein, aber das ist kein Lösung. Stattdessen wird https genutzt.
 
@@ -50,3 +53,7 @@ $SERVER["socket"] == ":443" {
   ssl.pemfile = "/etc/lighttpd/certs/lighttpd.pem" 
 }
 ```
+
+# Wechselrichter Ansicht
+Um den Wechselrichter im lokalen Netzwerk über http abzufragen, muss im Browser mixed-content erlaubt werden, falls die Website über https geladen wird.  
+Dazu im Browser [chrome://flags/](chrome://flags/) die Inverter URL bei: "Insecure origins treated as secure" eintragen.

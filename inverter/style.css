@@ -1,0 +1,5 @@
+td, th {padding: 4px;}
+
+td.class_alignRight {
+  text-align: right;
+}

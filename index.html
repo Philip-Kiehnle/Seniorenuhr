@@ -130,7 +130,7 @@
   var shift_done = false;
   var pixel_offset = 0;
   const PIXEL_OFFSET_HOURSTEP = 11;  // prime number
-  const PIXEL_OFFSET_MAX = 70;
+  const PIXEL_OFFSET_MAX = 20;
 
   function isDocumentInFullScreenMode()
   {
@@ -219,6 +219,13 @@
     //console.log('screen_width', screen_width);
     //console.log('max_width', max_width);
     //console.log('font_scale', font_scale);
+
+    if (is_fullscreen()) {
+        let content_height = document.getElementById('div_fsContent_main').clientHeight + PIXEL_OFFSET_MAX;
+        let screen_height = window.innerHeight;
+        let font_scale_h = screen_height/content_height;
+        font_scale = Math.min(font_scale, font_scale_h);
+    }
 
     if (font_scale > 0.01) {
         var el = document.querySelectorAll('.class_scaleText');

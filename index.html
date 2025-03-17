@@ -58,31 +58,31 @@
 <table class="class_settings">
   <tr>
     <td>Mo:</td>
-    <td><input class="class_settings persistent" type='text' id='input_day1' value="Tagespflege 😊"/></td>
+    <td><textarea class="class_settings persistent" id='input_day1'>Tagespflege 😊</textarea></td>
   </tr>
   <tr>
     <td>Di:</td>
-    <td><input class="class_settings persistent" type='text' id='input_day2'/></td>
+    <td><textarea class="class_settings persistent" id='input_day2'></textarea></td>
   </tr>
   <tr>
     <td>Mi:</td>
-    <td><input class="class_settings persistent" type='text' id='input_day3' value="Tagespflege 😊"/></td>
+    <td><textarea class="class_settings persistent" id='input_day3'>Tagespflege 😊</textarea></td>
   </tr>
   <tr>
     <td>Do:</td>
-    <td><input class="class_settings persistent" type='text' id='input_day4'/></td>
+    <td><textarea class="class_settings persistent" id='input_day4'></textarea></td>
   </tr>
   <tr>
     <td>Fr:</td>
-    <td><input class="class_settings persistent" type='text' id='input_day5' value="Tagespflege 😊"/></td>
+    <td><textarea class="class_settings persistent" id='input_day5'>Tagespflege 😊</textarea></td>
   </tr>
   <tr>
     <td>Sa:</td>
-    <td><input class="class_settings persistent" type='text' id='input_day6'/></td>
+    <td><textarea class="class_settings persistent" id='input_day6'></textarea></td>
   </tr>
   <tr>
     <td>So:</td>
-    <td><input class="class_settings persistent" type='text' id='input_day0'/></td>
+    <td><textarea class="class_settings persistent" id='input_day0'></textarea></td>
   </tr>
   <tr>
     <td>Disp. On:</td>
@@ -198,7 +198,7 @@
     }
 
     meeting_str += '</strong>';
-    document.getElementById('meeting').innerHTML = meeting_str;
+    document.getElementById('meeting').innerHTML = meeting_str.replace(/\n/g, '<br>');
   }
 
   function resizeText()
